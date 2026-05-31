@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0">
+	
+<channel>
+<title>Current Issue of the Texas Register</title>
+
+<link>http://www.sos.state.tx.us/texreg/index.shtml</link>
+	
+<description>This feed contains information published in the weekly Texas Register for May 29, 2026 in html and pdf format.</description> 
+	
+<item> 
+	
+<title>HTML format</title>
+	
+<link>http://www.sos.state.tx.us/texreg/archive/May292026/index.html</link>
+	
+<description>Texas Register issue for May 29, 2026 in html format</description>
+	
+</item>
+	
+<item> 
+	
+<title>PDF format</title>
+ 
+<link>http://www.sos.state.tx.us/texreg/pdf/backview/0529/index.shtml</link>
+
+<description>Texas Register issue for May 29, 2026 in pdf format</description>
+	
+</item>
+	
+<item>	
+<title>All Texas Register issues available electronically</title>
+	
+<link>http://texashistory.unt.edu/explore/collections/TR/</link>
+	
+<description>All Texas Register issues beginning with Volume 1, Number 1 (January 6, 1976) are available through The Portal to Texas History on the University of North Texas Libraries website</description>
+	
+</item>
+	
+</channel>
+</rss> 
