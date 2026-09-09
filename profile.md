@@ -4,13 +4,13 @@ This file is read by the triage and brief Claude passes. It is the primary
 knob for steering what shows up in the weekly digest. Edit freely.
 
 ## Who I am, geographically
-- Austin, Texas (specify council district when you know it: e.g. District 9)
+- Austin, Texas (specify council district 1)
 - Travis County resident
 
 ## Topics I care about
 - Housing, zoning, and land use in Austin (esp. my district)
-- Texas water policy and Edwards Aquifer protection
-- Federal student loan rules and higher-education regulation
+- Texas water policy and Aquifer protection
+- Changes to rules and regulations in education
 - Public transit and mobility in Austin
 - AI / data privacy regulation at the federal level
 
