@@ -4,7 +4,7 @@ This file is read by the triage and brief Claude passes. It is the primary
 knob for steering what shows up in the weekly digest. Edit freely.
 
 ## Who I am, geographically
-- Austin, Texas (specify council district 1)
+- Austin, Texas (Council District 1)
 - Travis County resident
 
 ## Topics I care about
