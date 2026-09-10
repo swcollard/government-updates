@@ -9,7 +9,7 @@ knob for steering what shows up in the weekly digest. Edit freely.
 
 ## Topics I care about
 - Housing, zoning, and land use in Austin (esp. my district)
-- Texas water policy and Aquifer protection
+- Texas water policy and aquifer protection
 - Changes to rules and regulations in education
 - Public transit and mobility in Austin
 - AI / data privacy regulation at the federal level
