@@ -12,6 +12,7 @@ class SourceStatus:
     name: str
     ok: bool
     error: str | None = None
+    item_count: int = 0
 
 
 @dataclass
@@ -84,7 +85,8 @@ def _footer(sources: list[SourceStatus]) -> str:
     lines = ["---", "**Sources checked:**"]
     for s in sources:
         if s.ok:
-            lines.append(f"- {s.name}: ok")
+            noun = "item" if s.item_count == 1 else "items"
+            lines.append(f"- {s.name}: ok ({s.item_count} {noun})")
         else:
             lines.append(f"- {s.name}: FAILED ({s.error or 'unknown'})")
     return "\n".join(lines)

@@ -49,7 +49,7 @@ def run_pipeline(
         try:
             fetched = fetch(start, end)
             all_items.extend(fetched)
-            sources.append(SourceStatus(name=name, ok=True))
+            sources.append(SourceStatus(name=name, ok=True, item_count=len(fetched)))
         except Exception as exc:  # adapter failures must not break the digest
             sources.append(SourceStatus(name=name, ok=False, error=str(exc)))
 
