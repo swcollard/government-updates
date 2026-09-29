@@ -29,6 +29,20 @@ placeholder/training row (``item_number == "test"``, ``agenda_date`` in
 2050) that both queries below explicitly exclude -- left in unfiltered, it
 would have permanently defeated the freshness check by always sorting first
 as the "most recent" row.
+
+Re-verified 2026-09-28, in response to a false-alarm "has not been updated
+since 2026-09-10" failure (government-updates#18): confirmed live against
+data.austintexas.gov and the Socrata catalog that ``sich-49ay`` is not dead --
+``data_updated_at`` was current as of the same day. Pulling the distinct
+``agenda_date`` history back to 2025-08 shows Austin Council's real cadence
+routinely skips a cycle (28-day gaps, several times a year) and takes winter
+(~42-day) and summer (~56-day) recesses -- nothing like "a couple of weeks".
+The old ``STALE_AFTER_DAYS = 14`` was tighter than the dataset's own normal
+rhythm, so it fired on routine gaps instead of only on genuine abandonment
+(the actual dead-dataset case, ``3c89-i35a``, went 87+ days with zero new
+rows). Raised the threshold to 60 days to clear the longest observed normal
+gap with room to spare, while still catching a truly dead dataset much
+sooner than 87 days.
 """
 from __future__ import annotations
 
@@ -54,12 +68,14 @@ SOURCE = "Austin Council"
 _EXCLUDE_TEST_ROW = "item_number != 'test'"
 
 # If the windowed query comes back empty, double-check the dataset's most
-# recent row before trusting that it was just a quiet week. Austin Council
-# goes quiet around holidays and its summer recess, but not for more than a
-# couple of weeks -- if the newest row on file is older than this relative
-# to the window's end date, treat the dataset itself as stale and fail loudly
-# rather than reporting "ok" with 0 items again.
-STALE_AFTER_DAYS = 14
+# recent row before trusting that it was just a quiet week. Austin Council's
+# real posting cadence (verified 2026-09-28 against ~13 months of history)
+# routinely skips a cycle -- 28-day gaps happen several times a year -- and
+# its winter and summer recesses run ~42 and ~56 days respectively, far
+# longer than "a couple of weeks". If the newest row on file is older than
+# this relative to the window's end date, treat the dataset itself as stale
+# and fail loudly rather than reporting "ok" with 0 items again.
+STALE_AFTER_DAYS = 60
 
 
 def fetch_austin_items(start: Date, end: Date) -> list[CivicItem]:
