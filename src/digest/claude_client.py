@@ -7,8 +7,8 @@ from __future__ import annotations
 import os
 from typing import Any
 
-DEFAULT_TRIAGE_MODEL = "claude-haiku-4-5"
-DEFAULT_BRIEF_MODEL = "claude-sonnet-4-6"
+DEFAULT_TRIAGE_MODEL = "claude-haiku-5-5"
+DEFAULT_BRIEF_MODEL = "claude-sonnet-5-5"
 DEFAULT_MAX_TOKENS = 4000
 
 
