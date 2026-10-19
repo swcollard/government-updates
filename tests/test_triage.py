@@ -25,7 +25,7 @@ def _item(id_: str, title: str = "T", abstract: str | None = "A") -> CivicItem:
 def _client_returning(json_payload: list[dict]) -> ClaudeClient:
     fake_sdk = MagicMock()
     fake_response = MagicMock()
-    fake_response.content = [MagicMock(text=json.dumps(json_payload))]
+    fake_response.content = [MagicMock(type="text", text=json.dumps(json_payload))]
     fake_sdk.messages.create.return_value = fake_response
     return ClaudeClient(sdk=fake_sdk, model="claude-haiku-4-5")
 
@@ -55,10 +55,10 @@ def test_triage_batches_large_inputs():
     fake_sdk = MagicMock()
     # Two responses, since batch size defaults to 25.
     fake_sdk.messages.create.side_effect = [
-        MagicMock(content=[MagicMock(text=json.dumps(
+        MagicMock(content=[MagicMock(type="text", text=json.dumps(
             [{"id": str(i), "score": 80, "reason": "r"} for i in range(25)]
         ))]),
-        MagicMock(content=[MagicMock(text=json.dumps(
+        MagicMock(content=[MagicMock(type="text", text=json.dumps(
             [{"id": str(i), "score": 80, "reason": "r"} for i in range(25, 30)]
         ))]),
     ]
@@ -98,6 +98,6 @@ def test_triage_drops_items_the_model_did_not_score():
 def _client_returning_text(text: str) -> ClaudeClient:
     fake_sdk = MagicMock()
     fake_response = MagicMock()
-    fake_response.content = [MagicMock(text=text)]
+    fake_response.content = [MagicMock(type="text", text=text)]
     fake_sdk.messages.create.return_value = fake_response
     return ClaudeClient(sdk=fake_sdk, model="claude-haiku-4-5")

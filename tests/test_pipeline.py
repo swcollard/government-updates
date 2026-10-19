@@ -21,7 +21,7 @@ def _item(level: Level, id_: str, title: str) -> CivicItem:
 def _fake_client_sequence(texts: list[str]) -> ClaudeClient:
     fake_sdk = MagicMock()
     fake_sdk.messages.create.side_effect = [
-        MagicMock(content=[MagicMock(text=t)]) for t in texts
+        MagicMock(content=[MagicMock(type="text", text=t)]) for t in texts
     ]
     return ClaudeClient(sdk=fake_sdk, model="m")
 

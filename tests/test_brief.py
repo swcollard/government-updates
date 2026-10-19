@@ -26,7 +26,7 @@ def _triaged(id_: str, bucket: Bucket = Bucket.RELEVANT) -> TriagedItem:
 def _client_returning(payload: dict) -> ClaudeClient:
     fake_sdk = MagicMock()
     fake_sdk.messages.create.return_value = MagicMock(
-        content=[MagicMock(text=json.dumps(payload))]
+        content=[MagicMock(type="text", text=json.dumps(payload))]
     )
     return ClaudeClient(sdk=fake_sdk, model="claude-sonnet-4-6")
 
@@ -39,7 +39,7 @@ def test_brief_only_runs_on_relevant_bucket():
     ]
     fake_sdk = MagicMock()
     fake_sdk.messages.create.return_value = MagicMock(
-        content=[MagicMock(text=json.dumps({
+        content=[MagicMock(type="text", text=json.dumps({
             "what_it_is": "x", "why_it_matters": "y", "what_you_could_do": "z"
         }))]
     )
@@ -71,7 +71,7 @@ def test_brief_tolerates_code_fenced_json():
     triaged = [_triaged("a")]
     fake_sdk = MagicMock()
     fake_sdk.messages.create.return_value = MagicMock(
-        content=[MagicMock(text='```json\n{"what_it_is":"x","why_it_matters":"y","what_you_could_do":"z"}\n```')]
+        content=[MagicMock(type="text", text='```json\n{"what_it_is":"x","why_it_matters":"y","what_you_could_do":"z"}\n```')]
     )
     client = ClaudeClient(sdk=fake_sdk, model="claude-sonnet-4-6")
 
