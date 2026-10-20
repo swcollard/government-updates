@@ -25,7 +25,8 @@ class ClaudeClient:
             system=system,
             messages=[{"role": "user", "content": user}],
         )
-        return "".join(block.text for block in response.content)
+        # Newer models can return non-text blocks (e.g. thinking) ahead of the answer.
+        return "".join(block.text for block in response.content if block.type == "text")
 
 
 def build_default(model: str) -> ClaudeClient:

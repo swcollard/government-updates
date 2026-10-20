@@ -7,7 +7,7 @@ from digest.claude_client import ClaudeClient
 def test_complete_returns_message_text():
     fake_sdk = MagicMock()
     fake_response = MagicMock()
-    fake_response.content = [MagicMock(text="hello world")]
+    fake_response.content = [MagicMock(type="text", text="hello world")]
     fake_sdk.messages.create.return_value = fake_response
 
     client = ClaudeClient(sdk=fake_sdk, model="claude-haiku-4-5")
@@ -24,10 +24,23 @@ def test_complete_returns_message_text():
 def test_complete_joins_multiple_content_blocks():
     fake_sdk = MagicMock()
     fake_response = MagicMock()
-    fake_response.content = [MagicMock(text="part one "), MagicMock(text="part two")]
+    fake_response.content = [MagicMock(type="text", text="part one "), MagicMock(type="text", text="part two")]
     fake_sdk.messages.create.return_value = fake_response
 
     client = ClaudeClient(sdk=fake_sdk, model="claude-haiku-4-5")
     out = client.complete(system="s", user="u")
 
     assert out == "part one part two"
+
+
+def test_complete_ignores_non_text_blocks():
+    fake_sdk = MagicMock()
+    fake_response = MagicMock()
+    thinking = MagicMock(type="thinking", spec=["type", "thinking"])
+    fake_response.content = [thinking, MagicMock(type="text", text="answer")]
+    fake_sdk.messages.create.return_value = fake_response
+
+    client = ClaudeClient(sdk=fake_sdk, model="claude-haiku-5-5")
+    out = client.complete(system="s", user="u")
+
+    assert out == "answer"
