@@ -131,3 +131,21 @@ def test_fetch_ignores_pdf_and_archive_entries_in_live_feed_shape():
     assert ISSUE_URL in fetched_urls
     assert not any("pdf/backview" in u for u in fetched_urls)
     assert not any("texashistory" in u for u in fetched_urls)
+
+
+@responses.activate
+def test_requests_send_identifying_user_agent():
+    """The SOS site 403s the default python-requests User-Agent."""
+    from digest.adapters.texas import USER_AGENT
+
+    responses.add(responses.GET, FEED_URL, body=_FEED_XML, status=200,
+                  content_type="application/rss+xml")
+    responses.add(responses.GET, ISSUE_URL, body=_ISSUE_HTML, status=200,
+                  content_type="text/html")
+
+    fetch_texas_items(date(2026, 5, 22), date(2026, 5, 28))
+
+    assert len(responses.calls) == 2
+    for call in responses.calls:
+        assert call.request.headers["User-Agent"] == USER_AGENT
+        assert "python-requests" not in call.request.headers["User-Agent"]
