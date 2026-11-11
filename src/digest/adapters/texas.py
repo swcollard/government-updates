@@ -40,6 +40,15 @@ from digest.models import CivicItem, Level
 FEED_URL = "https://www.sos.state.tx.us/texreg/texreg.xml"
 SOURCE = "Texas Register"
 
+# www.sos.state.tx.us answers the default ``python-requests/x.y`` User-Agent
+# with "403 Forbidden". Identify this client honestly instead; we do not
+# impersonate a browser.
+USER_AGENT = "government-updates-digest/1.0 (+https://github.com/swcollard/government-updates)"
+_HEADERS = {
+    "User-Agent": USER_AGENT,
+    "Accept": "application/rss+xml, application/xml;q=0.9, text/html;q=0.8, */*;q=0.5",
+}
+
 # Matches the issue date embedded in each entry's <description>, e.g.
 # "Texas Register issue for August 21, 2026 in html format".
 _DESCRIPTION_DATE_RE = re.compile(r"for ([A-Z][a-z]+ \d{1,2}, \d{4})")
@@ -78,7 +87,7 @@ def _is_html_issue_entry(entry) -> bool:
 
 
 def _get(url: str) -> bytes:
-    resp = requests.get(url, timeout=30)
+    resp = requests.get(url, headers=_HEADERS, timeout=30)
     resp.raise_for_status()
     return resp.content
 
