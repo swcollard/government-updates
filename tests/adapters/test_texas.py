@@ -149,3 +149,58 @@ def test_requests_send_identifying_user_agent():
     for call in responses.calls:
         assert call.request.headers["User-Agent"] == USER_AGENT
         assert "python-requests" not in call.request.headers["User-Agent"]
+
+
+_ALT_FEED_URL = "https://www.sos.texas.gov/texreg/texreg.xml"
+_HTTP_ISSUE_URL = "http://www.sos.state.tx.us/texreg/archive/May262026/index.shtml"
+
+
+@responses.activate
+def test_plain_http_issue_links_from_live_feed_are_fetched_over_https():
+    """The live feed advertises ``http://`` issue links. Fetch them over
+    https, and never over plain http."""
+    feed = _LIVE_SHAPE_FEED_XML.replace(ISSUE_URL.encode(), _HTTP_ISSUE_URL.encode())
+    responses.add(responses.GET, FEED_URL, body=feed, status=200,
+                  content_type="application/rss+xml")
+    responses.add(responses.GET, ISSUE_URL, body=_ISSUE_HTML, status=200,
+                  content_type="text/html")
+
+    items = fetch_texas_items(date(2026, 5, 22), date(2026, 5, 28))
+
+    assert len(items) == 2
+    assert all(call.request.url.startswith("https://") for call in responses.calls)
+
+
+@responses.activate
+def test_falls_back_to_other_sos_hostname_when_primary_refuses():
+    """The failure in issue #26: 405 "Not Allowed" from the primary host."""
+    alt_issue_url = ISSUE_URL.replace("sos.state.tx.us", "sos.texas.gov")
+    responses.add(responses.GET, FEED_URL, body="Not Allowed", status=405)
+    responses.add(responses.GET, _ALT_FEED_URL, body=_FEED_XML, status=200,
+                  content_type="application/rss+xml")
+    responses.add(responses.GET, ISSUE_URL, body="Not Allowed", status=405)
+    responses.add(responses.GET, alt_issue_url, body=_ISSUE_HTML, status=200,
+                  content_type="text/html")
+
+    items = fetch_texas_items(date(2026, 5, 22), date(2026, 5, 28))
+
+    assert len(items) == 2
+    # TOC links resolve against the host that actually answered.
+    assert all("sos.texas.gov" in str(i.full_text_url) for i in items)
+
+
+@responses.activate
+def test_failure_message_reports_what_each_host_answered():
+    import pytest
+
+    responses.add(responses.GET, FEED_URL, body="<h1>Not Allowed</h1>", status=405,
+                  headers={"Server": "ExampleWAF"})
+    responses.add(responses.GET, _ALT_FEED_URL, body="Forbidden", status=403)
+
+    with pytest.raises(RuntimeError) as excinfo:
+        fetch_texas_items(date(2026, 5, 22), date(2026, 5, 28))
+
+    msg = str(excinfo.value)
+    assert "HTTP 405" in msg and "HTTP 403" in msg
+    assert "sos.state.tx.us" in msg and "sos.texas.gov" in msg
+    assert "ExampleWAF" in msg and "Not Allowed" in msg

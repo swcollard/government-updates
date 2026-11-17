@@ -29,7 +29,7 @@ import hashlib
 import re
 from datetime import date as Date, datetime
 from html.parser import HTMLParser
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlsplit, urlunsplit
 
 import feedparser
 import requests
@@ -38,6 +38,10 @@ from digest.models import CivicItem, Level
 
 
 FEED_URL = "https://www.sos.state.tx.us/texreg/texreg.xml"
+# The Secretary of State serves the same content from two official hostnames
+# (the legacy ``sos.state.tx.us`` and the current ``sos.texas.gov``). Either
+# can refuse a given client independently, so each fetch tries both.
+_SOS_HOSTS = ("www.sos.state.tx.us", "www.sos.texas.gov")
 SOURCE = "Texas Register"
 
 # www.sos.state.tx.us answers the default ``python-requests/x.y`` User-Agent
@@ -56,7 +60,8 @@ _DESCRIPTION_DATE_RE = re.compile(r"for ([A-Z][a-z]+ \d{1,2}, \d{4})")
 
 def fetch_texas_items(start: Date, end: Date) -> list[CivicItem]:
     """Fetch all items from Texas Register issues published in [start, end]."""
-    feed = feedparser.parse(_get(FEED_URL))
+    feed_content, _ = _get(FEED_URL)
+    feed = feedparser.parse(feed_content)
     items: list[CivicItem] = []
     for entry in feed.entries:
         if not _is_html_issue_entry(entry):
@@ -67,8 +72,9 @@ def fetch_texas_items(start: Date, end: Date) -> list[CivicItem]:
         issue_url = entry.get("link")
         if not issue_url:
             continue
-        issue_html = _get(issue_url).decode("utf-8", errors="replace")
-        for title, link in _extract_toc(issue_html, base_url=issue_url):
+        issue_content, fetched_url = _get(issue_url)
+        issue_html = issue_content.decode("utf-8", errors="replace")
+        for title, link in _extract_toc(issue_html, base_url=fetched_url):
             items.append(_to_civicitem(title=title, link=link, pub=pub))
     return items
 
@@ -86,10 +92,53 @@ def _is_html_issue_entry(entry) -> bool:
     return "/texreg/archive/" in link
 
 
-def _get(url: str) -> bytes:
-    resp = requests.get(url, headers=_HEADERS, timeout=30)
-    resp.raise_for_status()
-    return resp.content
+def _candidate_urls(url: str) -> list[str]:
+    """``url`` forced to https, then the same path on the SOS's other hostname.
+
+    The live feed advertises its issue links as plain ``http://`` URLs, and
+    only sos.state.tx.us / sos.texas.gov are known to be interchangeable;
+    links to any other host are fetched as given.
+    """
+    parts = urlsplit(url)
+    if parts.hostname not in _SOS_HOSTS:
+        return [url]
+    primary = urlunsplit(parts._replace(scheme="https"))
+    other = next(h for h in _SOS_HOSTS if h != parts.hostname)
+    alternate = urlunsplit(parts._replace(scheme="https", netloc=other))
+    return [primary, alternate]
+
+
+def _describe_failure(url: str, exc: requests.RequestException) -> str:
+    """One line saying what the server actually answered with.
+
+    A bare "405 Client Error: Not Allowed" gave us nothing to go on when the
+    block was only visible from GitHub Actions, so include the headers that
+    identify who is answering (CDN/WAF/origin) and the start of the body.
+    """
+    resp = getattr(exc, "response", None)
+    if resp is None:
+        return f"{url}: {type(exc).__name__}: {exc}"
+    interesting = {
+        k: v for k, v in resp.headers.items()
+        if k.lower() in {"server", "via", "x-cache", "x-amz-cf-id", "x-amzn-requestid",
+                         "x-amzn-errortype", "cf-ray", "content-type"}
+    }
+    body = re.sub(r"\s+", " ", resp.text or "").strip()[:200]
+    return f"{url}: HTTP {resp.status_code} {resp.reason} headers={interesting} body={body!r}"
+
+
+def _get(url: str) -> tuple[bytes, str]:
+    """Fetch ``url``; return (content, the URL that actually answered)."""
+    failures: list[str] = []
+    for candidate in _candidate_urls(url):
+        try:
+            resp = requests.get(candidate, headers=_HEADERS, timeout=30)
+            resp.raise_for_status()
+        except requests.RequestException as exc:
+            failures.append(_describe_failure(candidate, exc))
+            continue
+        return resp.content, candidate
+    raise RuntimeError("Texas Register fetch failed: " + " | ".join(failures))
 
 
 def _entry_date(entry) -> Date | None:
